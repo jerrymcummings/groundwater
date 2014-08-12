@@ -14,7 +14,6 @@ getWaterDoc <- function(start.date,
                     "&stateCd=", state.code, 
                     "&startDT=", start.date,
                     "&endDT=", end.date)
-  cat(obs.url)
   
   doc <- xmlTreeParse(obs.url, getDTD=FALSE, useInternalNodes=TRUE)
   doc <- xmlRoot(doc)
@@ -113,17 +112,24 @@ getSiteCodes <- function(water.doc) {
 getSiteCoords <- function(water.doc, site.name=NULL, site.code=NULL) {
   ns <- xmlNamespaceDefinitions(water.doc, simplify=TRUE)
   
-  core.find <- paste0("//ns1:timeSeries[ns1:sourceInfo/ns1:siteCode='",
-                    site.code,
-                    "']/./ns1:sourceInfo/ns1:geoLocation/ns1:geogLocation")
-
-  result <- xpathApply(water.doc, paste0(core.find, "/ns1:latitude"), xmlValue, namespaces=ns)
-  lat <- result[[1]]
+  site <- xpathApply(water.doc, paste0("//ns1:timeSeries[ns1:sourceInfo/ns1:siteCode='",
+                                      site.code, "']"), 
+                     namespaces=ns)
   
-  result <- xpathApply(water.doc, paste0(core.find, "/ns1:longitude"), xmlValue, namespaces=ns)
-  lon <- result[[1]]
+  site <- xmlDoc(site[[1]]) # first of a list of one
+  site <- xmlRoot(site)
+  site.ns <- xmlNamespaceDefinitions(site, simplify=TRUE)
   
-  c(latitude=lat, longitude = lon)
+  site.latitude <- as.numeric(xpathApply(site, 
+                                         "ns1:sourceInfo/ns1:geoLocation/ns1:geogLocation/ns1:latitude", 
+                                         namespaces=site.ns, 
+                                         xmlValue))
+  site.longitude <- as.numeric(xpathApply(site, 
+                                          "ns1:sourceInfo/ns1:geoLocation/ns1:geogLocation/ns1:longitude", 
+                                          namespaces=site.ns, 
+                                          xmlValue))
+  
+  c(latitude=site.latitude, longitude=site.longitude)
 }
 
 # dev test code -----------------------------------------------------------
