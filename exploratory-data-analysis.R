@@ -1,8 +1,8 @@
 # exploratory-data-analysis.R
 
 library(dplyr)
-#library(ggvis)
 library(ggplot2)
+#library(ggvis)
 library(ggmap)
 
 
@@ -10,73 +10,107 @@ load('water.data.Rdata')
 
 water.data.df <- tbl_df(water.data)
 
-colnames(water.data.df)
+site.with.most.obs <-
+  water.data.df %>%
+  group_by(site.code) %>%
+  summarize(obs.counts=n()) %>%
+  arrange(desc(obs.counts)) %>%
+  head(1)
 
-data.years <- filter(water.data.df, format(date.time, '%Y') %in% c('2011','2012','2013'))
-data.years <- filter(data.years, value != -999999)
-data.years <- arrange(data.years, site.code, date.time)
-data.years <- group_by(data.years, site.code)
+one.site <- water.data.df %>%
+  filter(site.code == site.with.most.obs$site.code)
 
-means.years <- summarize(data.years,
-                        site.latitude = max(site.latitude),
-                        site.longitude = max(site.longitude),
-                        obs.count=n(),
-                        obs.mean.value=mean(value))
-
-# just New Hampshire
-nh.data.years <- filter(data.years, state.code == 'NH')
-
-# which ones have only a few data points? We'd like to see
-# twelve if one per month. Too few and we should drop them
-counts.nh.years <- summarize(nh.data.years, obs.count=n())
-ok.on.counts <- filter(counts.nh.years, obs.count > 2)
-nh.data.years <- filter(nh.data.years, site.code %in% ok.on.counts$site.code)
-
-ggplot(nh.data.years, aes(x=date.time, y=value)) +
-  geom_point() +
-  facet_wrap(~site.code) +
+# scatter plot of the data for this site
+ggplot(one.site, aes(x=date.time, y=feet.below.surface)) +
+  geom_point(size=1.5, color='darkgray') +
+  geom_smooth(method='lm') +
+  ggtitle(one.site$site.name) +
   theme_bw()
 
-# visually interesting:
-nh.oddball.sites <- c(
-  '435558071405820',
-  '424552071154901')
+# look for site with most history
+site.with.most.history <-
+  water.data.df %>%
+  group_by(site.code) %>%
+  summarize(date.range=as.numeric(max(date.time) - min(date.time))) %>%
+  arrange(desc(date.range)) %>%
+  head(1)
 
-nh.typical.sites <- c(
-  '425406070592601',
-  '425407070592801'
-  )
+one.site <- water.data.df %>%
+  filter(site.code == site.with.most.history$site.code)
 
-ggplot(subset(nh.data.years, site.code %in% nh.oddball.sites),
-       aes(x=date.time, y=value)) +
-
-  geom_point() +
+ggplot(one.site, aes(x=date.time, y=feet.below.surface)) +
+  geom_point(size=1.5, color='darkgray') +
   geom_line() +
-  
-  geom_vline(xintercept=as.numeric(as.Date('2012-01-01')), color='lightblue') +
-  geom_vline(xintercept=as.numeric(as.Date('2013-01-01')), color='lightblue') +
-
-  facet_wrap(~site.code) +
+  geom_smooth(method='lm') +
+  ggtitle(one.site$site.name) +
   theme_bw()
 
-ggplot(subset(nh.data.years, site.code %in% nh.typical.sites),
-       aes(x=date.time, y=value)) +
-  
-  geom_point() +
-  geom_line() +
-  
-  geom_vline(xintercept=as.numeric(as.Date('2012-01-01')), color='lightblue') +
-  geom_vline(xintercept=as.numeric(as.Date('2013-01-01')), color='lightblue') +
+# get date.time of greatest value for each year.
+max.values <-
+  one.site %>%
+  mutate(obs.year=as.integer(format(date.time, "%Y"))) %>%
+  group_by(obs.year) %>%
+  filter(feet.below.surface == max(feet.below.surface))
 
-  facet_wrap(~site.code) +
-  theme_bw()
-
-if (FALSE) {
-  map <- get_map(location='Loudon, New Hampshire', zoom=7)
-  ggmap(map) +
-    geom_point(data=means.years,
-               aes(x=site.longitude,
-                   y=site.latitude,
-                   color=obs.mean.value))
+max.values$date.time
   
-}
+# 
+# data.years <- filter(water.data.df, date.time >= '1900-01-01')
+# data.years <- filter(data.years, value != -999999)
+# data.years <- arrange(data.years, site.code, date.time)
+# data.years <- group_by(data.years, site.code)
+# 
+# means.years <- summarize(data.years,
+#                          site.latitude = max(site.latitude),
+#                          site.longitude = max(site.longitude),
+#                          obs.count=n(),
+#                          obs.mean.value=mean(value))
+# 
+# # just New Hampshire
+# nh.data.years <- filter(data.years, state.code == 'NH')
+# 
+# # which ones have only a few data points? We'd like to see
+# # twelve if one per month. Too few and we should drop them
+# counts.nh.years <- summarize(nh.data.years, obs.count=n())
+# ok.on.counts <- filter(counts.nh.years, obs.count > 2)
+# nh.data.years <- filter(nh.data.years, site.code %in% ok.on.counts$site.code)
+# 
+# ggplot(nh.data.years, aes(x=date.time, y=value)) +
+#   geom_point() +
+#   facet_wrap(~site.code) +
+#   theme_bw()
+# 
+# # visually interesting:
+# nh.oddball.sites <- c(
+#   '435558071405820',
+#   '424552071154901')
+# 
+# nh.typical.sites <- c(
+#   '425406070592601',
+#   '425407070592801'
+# )
+# 
+# 
+# p <- ggplot(subset(nh.data.years, 
+#                    site.code %in% c(nh.oddball.sites, nh.typical.sites)),
+#             aes(x=date.time, y=value)) +
+#   
+#   geom_point() +
+#   geom_line() +
+#   
+#   #geom_vline(xintercept=as.numeric(as.Date('2012-01-01')), color='lightblue') +
+#   #geom_vline(xintercept=as.numeric(as.Date('2013-01-01')), color='lightblue') +
+#   
+#   facet_wrap(~site.code) +
+#   theme_bw()
+# print (p)
+# 
+# if (FALSE) {
+#   map <- get_map(location='Loudon, New Hampshire', zoom=7)
+#   ggmap(map) +
+#     geom_point(data=means.years,
+#                aes(x=site.longitude,
+#                    y=site.latitude,
+#                    color=obs.mean.value))
+#   
+# }

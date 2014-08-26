@@ -99,7 +99,7 @@ request.states <- c('NH','VT','MA','ME')
 
 water.data <- data.frame()
 for (state in request.states) {
-  for (yr in 1990:1991) {
+  for (yr in 1900:2014) {
     for (mo in 1:12) {
       day.1 = 1
       
@@ -135,6 +135,10 @@ water.data$site.latitude <- as.numeric(as.character(water.data$site.latitude))
 water.data$site.longitude <- as.numeric(as.character(water.data$site.longitude))
 
 row.names(water.data) <- 1:nrow(water.data)
+
+water.data$value[water.data$value == -999999] <- NA
+colnames(water.data)[which(colnames(water.data) == 'value')] <- 'feet.below.surface'
+
 
 save(water.data, file='water.data.Rdata')
 
