@@ -4,9 +4,15 @@ library(dplyr)
 library(ggplot2)
 #library(ggvis)
 library(ggmap)
+library(RColorBrewer)
 
 
 load('water.data.Rdata')
+
+doy <- function(dt) {
+  as.integer(strftime(dt, format="%j"))
+}
+water.data$day.of.year <- doy(water.data$date.time)
 
 water.data.df <- tbl_df(water.data)
 
@@ -38,12 +44,16 @@ site.with.most.history <-
 one.site <- water.data.df %>%
   filter(site.code == site.with.most.history$site.code)
 
+# debugging
+one.site <- one.site %>%
+  filter(date.time >= '1980-01-01' 
+         & date.time <= '1991-01-01')
+
 ggplot(one.site, aes(x=date.time, y=feet.below.surface)) +
   geom_point(size=1.5, color='darkgray') +
   geom_line() +
-  geom_smooth(method='lm') +
-  ggtitle(one.site$site.name) +
-  theme_bw()
+  #geom_smooth(method='lm') +
+  ggtitle(one.site$site.name)
 
 # get date.time of greatest value for each year.
 max.values <-
@@ -53,7 +63,26 @@ max.values <-
   filter(feet.below.surface == max(feet.below.surface))
 
 max.values$date.time
-  
+
+max.data <-
+  water.data.df %>%
+  mutate(obs.year=as.integer(format(date.time, '%Y'))) %>%
+  group_by(site.code, obs.year) %>%
+  filter(feet.below.surface == max(feet.below.surface) &
+           obs.year >= 2010 & obs.year <= 2013) %>%
+  group_by(site.code, site.latitude, site.longitude) %>%
+  summarize(median.day.of.year.for.max=median(day.of.year))
+
+map <- get_map(location="Richmond, Virginia", zoom=5)
+
+ggmap(map) +
+  geom_point(data=max.data,
+             aes(x=site.longitude,
+                 y=site.latitude,
+                 color=median.day.of.year.for.max)) +
+  scale_color_gradientn(colours=rainbow(356))
+
+
 # 
 # data.years <- filter(water.data.df, date.time >= '1900-01-01')
 # data.years <- filter(data.years, value != -999999)
