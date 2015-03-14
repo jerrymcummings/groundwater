@@ -4,8 +4,31 @@ sink('get-data.log', split=TRUE)
 
 require(XML)
 
-START_YEAR <- 2010
+START_YEAR <- 1900
 END_YEAR <- 2014
+
+request.states <- c('ME','NH')
+# request.states <- c('ME','NH','VT','MA','RI','CT','NY','NJ',
+#                     'PA','DE','MD','WV','VA','NC','SC','GA','FL')
+# request.states <- c('AL','AK','AZ','AR','CA',
+#                     'CO','CT','DE','DC','FL',
+#                     'GA','HI','ID','IL','IN',
+#                     'IA','KS','KY','LA','MD',
+#                     'ME','MA','MN','MS','MO',
+#                     'MT','NE','NE','NV','NH',
+#                     'NJ','NM','NY','NC','ND',
+#                     'OH','OK','OR','PA','RI',
+#                     'SC','SD','TN','TX','UT',
+#                     'VT','VA','WA','WV','WI',
+#                     'WY')
+
+# =====================================================================
+
+wlog <- function(s) {
+  cat(paste0(Sys.time(), ' ', s, '\n'))
+}
+
+# =====================================================================
 
 #
 # getWaterDoc
@@ -176,28 +199,12 @@ process.state <- function(state.code, start.date, end.date) {
   if (nrow(state.data) > 0) {
     state.data <- fix.columns(state.data)
     save(state.data, file=fname)
-
-    cat(paste0('Saved ', nrow(state.data), ' rows to ', fname, '\n'))
+    
+    wlog(paste0('Saved ', nrow(state.data), ' rows to ', fname))
   }
 }
 
 #--------------------------------------------------------------
-
-
-# request.states <- c('NH','VT','MA','ME')
-# request.states <- c('ME','NH','VT','MA','RI','CT','NY','NJ',
-#                     'PA','DE','MD','WV','VA','NC','SC','GA','FL')
-request.states <- c('AL','AK','AZ','AR','CA',
-                    'CO','CT','DE','DC','FL',
-                    'GA','HI','ID','IL','IN',
-                    'IA','KS','KY','LA','MD',
-                    'ME','MA','MN','MS','MO',
-                    'MT','NE','NE','NV','NH',
-                    'NJ','NM','NY','NC','ND',
-                    'OH','OK','OR','PA','RI',
-                    'SC','SD','TN','TX','UT',
-                    'VT','VA','WA','WV','WI',
-                    'WY')
 
 for (state in request.states) {
   for (yr in START_YEAR:END_YEAR) {
@@ -211,10 +218,10 @@ for (state in request.states) {
       
       dt.2 <- (seq(dt.1, length=2, by="months")-1)[2]
       
-      cat(paste0('...doing ', state, ', ', dt.1, ' to ', dt.2, '\n'))
+      wlog(paste0('...doing ', state, ', ', dt.1, ' to ', dt.2))
       result <- try(process.state(state.code=state, start.date=dt.1, end.date=dt.2))
       if (class(result) == "try-error") {
-        cat(paste0('*** PROBLEM doing ', state, ', ', dt.1, ' to ', dt.2, '\n'))
+        wlog(paste0('*** PROBLEM doing ', state, ', ', dt.1, ' to ', dt.2))
         next
       }
     }
