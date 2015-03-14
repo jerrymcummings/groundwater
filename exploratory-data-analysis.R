@@ -21,10 +21,34 @@ if (file.exists(DATA_FNAME)) {
   gc()
 }
 
+water_data$feet_below_surface <- -1 * water_data$feet_below_surface
+
 # =========================================================================
 
+# goal: find sites that observations for every year of the data set.
+years <- unique(format(water_data$date_time,'%Y'))
+
+sites_of_interest <- 
+  water_data %>% 
+  group_by(site_code, yr=format(date_time, '%Y')) %>%
+  summarize(count = n())
+
+sites_of_interest <-
+  sites_of_interest %>%
+  filter(yr %in% c(1965, 2014) & count > 4) %>%
+  select(site_code, yr)
+
+sites_of_interest <- 
+  sites_of_interest %>%
+  group_by(site_code) %>%
+  summarize(count = n()) %>%
+  filter(count == 2) %>%
+  select(site_code)
+
 water_data %>%
-  filter(site_code %in% c(430527071140101, 445334071291701)) %>%
+  filter(site_code %in% sites_of_interest$site_code) %>%
   ggvis(~date_time, ~feet_below_surface, fill = ~factor(site_name)) %>%
-  layer_points()
+  layer_points(size:=4) %>%
+  group_by(site_code) %>%
+  layer_smooths()
 

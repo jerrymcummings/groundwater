@@ -4,7 +4,7 @@ sink('get-data.log', split=TRUE)
 
 require(XML)
 
-START_YEAR <- 2014
+START_YEAR <- 1960
 END_YEAR <- 2014
 
 request_states <- c('NH')
