@@ -1,6 +1,8 @@
 
 library(dplyr)
 library(ggvis)
+library(ggmap)     # install.packages('ggmap')
+library(seasonal)  # install.packages('seasonal')
 
 # load or create the data file --------------------------------------------
 
@@ -44,11 +46,43 @@ sites_of_interest <-
   summarize(count = n()) %>%
   filter(count == 2) %>%
   select(site_code)
+sites_of_interest <- factor(sites_of_interest$site_code)
 
 water_data %>%
-  filter(site_code %in% sites_of_interest$site_code) %>%
+  filter(site_code %in% sites_of_interest) %>%
   ggvis(~date_time, ~feet_below_surface, fill = ~factor(site_name)) %>%
   layer_points(size:=4) %>%
   group_by(site_code) %>%
   layer_smooths()
 
+# =========================================================================
+
+
+# where are the sites selected above located?
+site_locations <-
+  water_data %>%
+  filter(site_code %in% sites_of_interest) %>%
+  group_by(site_code, site_name, site_latitude, site_longitude) %>%
+  summarize(obs_count = n())
+
+map_center_lon = -72
+map_center_lat = 43.5
+
+map <- get_map(location = c(lon = map_center_lon,
+                            lat = map_center_lat),
+               maptype = 'roadmap',
+               zoom = 8)
+
+ggmap(map) +
+  geom_point(data = site_locations,
+             aes(x = site_longitude,
+                 y = site_latitude),
+             size = 5) +
+  geom_text(data = site_locations,
+            aes(x = site_longitude + 0.04,
+                y = site_latitude + 0.04,
+                label = site_name,
+                hjust = 0))
+
+
+# =========================================================================
