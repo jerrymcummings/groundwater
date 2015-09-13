@@ -5,7 +5,7 @@ sink('get-data.log', split=TRUE)
 require(XML)
 
 START_YEAR <- 1960
-END_YEAR <- 2014
+END_YEAR <- 2015
 
 request_states <- c('NH')
 # request_states <- c('ME','NH','VT','MA','RI','CT','NY','NJ',
@@ -203,6 +203,10 @@ fix_columns <- function(water_data) {
 # process_state -----------------------------------------------------------
 
 process_state <- function(state_code, start_date, end_date) {
+  if (!dir.exists('data')) {
+    dir.create('data')  
+  }
+  
   fname <- paste0('data/', state_code, ' ', start_date, ' ', end_date, '.RData')
   
   if (file.exists(fname)) return()
